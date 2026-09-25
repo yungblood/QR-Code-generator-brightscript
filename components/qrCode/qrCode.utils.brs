@@ -82,7 +82,14 @@ function concat(array1 as object, array2 as object) as object
 end function
 
 function splice(array as object, start as integer, delete = 999999 as integer, insert = [] as object)
-    if start > array.count() - 1 then start = array.count() - 1
+    ' BUGFIX (see A:\workspace\QR-Code-generator-brightscript investigation notes):
+    ' two off-by-one defects here corrupted getAlignmentPatternPositions() for every
+    ' QR version >= 7, verified against Nayuki's reference algorithm for all 40 versions.
+    ' 1) The clamp below used `array.count() - 1` (the last valid INDEX) as the ceiling
+    '    for `start`, so a legitimate "insert at the end" position (start == array.count(),
+    '    one past the last element -- standard JS splice semantics) got pulled back by one,
+    '    silently turning an append into an insert-before-the-last-element.
+    if start > array.count() then start = array.count()
     if start < 0 then start = array.count() - start
     if start < 0 then start = 0
     if delete < 0 then delete = 0
@@ -91,7 +98,12 @@ function splice(array as object, start as integer, delete = 999999 as integer, i
     next
     tmp = []
     tmp.append(insert)
-    while(array.count() - 1 > start)
+    ' 2) This loop must shift the element sitting AT `start` itself (not just the ones
+    '    after it) into tmp, or that element never moves and the insert lands in the
+    '    wrong place. The strict `>` skipped that element whenever `start` was also the
+    '    array's last index -- the common case when repeatedly inserting near the front
+    '    of a short, growing array, exactly what getAlignmentPatternPositions() does.
+    while(array.count() - 1 >= start)
         tmp.push(array[start])
         array.delete(start)
     end while
