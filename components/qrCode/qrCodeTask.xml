@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!--
+    QRCodeTask -- runs QR generation on its own Task thread instead of the
+    render thread. Built on the base Task node's own one-shot mechanism
+    (functionName + control="RUN"), not a hand-rolled message loop, since this
+    is a single generate-then-report job, not a long-running worker.
+    See https://developer.roku.com/dev/docs/task for that mechanism, and
+    qrCode.cache.brs's header comment for why this is safe to do off the
+    render thread (nothing here touches a SceneGraph render node).
+
+    Usage (see qrCode.cache.brs's qrGenerateAsync() for a one-call wrapper):
+        task = CreateObject("roSGNode", "QRCodeTask")
+        task.observeField("response", "onQrDone")   ' attach BEFORE control=RUN
+        task.request = { text: "hello" }
+        task.functionName = "generate"
+        task.control = "RUN"
+    `response` is set once, to { uri, cacheHit, error } -- same shape
+    qrGenerateAndCache() returns directly for the synchronous/main-thread path.
+-->
+<component name="QRCodeTask" extends="Task">
+    <script type="text/brightscript" uri="./qrCodeTask.brs" />
+    <script type="text/brightscript" uri="./qrCode.brs" />
+    <script type="text/brightscript" uri="./qrCode.cache.brs" />
+    <script type="text/brightscript" uri="./qrCode.high.brs" />
+    <script type="text/brightscript" uri="./qrCode.mid.brs" />
+    <script type="text/brightscript" uri="./qrCode.low.brs" />
+    <script type="text/brightscript" uri="./qrCode.draw.brs" />
+    <script type="text/brightscript" uri="./qrCode.mask.brs" />
+    <script type="text/brightscript" uri="./qrCode.help.brs" />
+    <script type="text/brightscript" uri="./qrSegment.brs" />
+    <script type="text/brightscript" uri="./qrCode.utils.brs" />
+    <interface>
+        <field id="request" type="assocarray" />
+        <field id="response" type="assocarray" />
+    </interface>
+</component>

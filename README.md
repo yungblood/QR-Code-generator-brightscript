@@ -6,6 +6,30 @@ With this Library, adding a QR code to your Roku app is a simple as including th
 
 \<qrCode text="https://www.paramountplus.com/" />
 
+That generates synchronously on whatever thread the `<qrCode>` node lives on --
+normally the render thread, which is fine for a few small codes but can hitch
+the UI for a large/frequent one. For that case, generate on a background Task
+thread instead, from any component's own .brs (add `qrCode.cache.brs` to that
+component's `<script>` tags first):
+
+```brightscript
+sub init()
+    m.qrTask = qrGenerateAsync({ text: "https://www.paramountplus.com/", ecl: "HIGH" }, "onQrDone")
+end sub
+
+sub onQrDone(event as object)
+    result = event.getData() ' { uri, cacheHit, error }
+    if result.error = invalid then m.top.findNode("myPoster").uri = result.uri
+end sub
+```
+
+Both paths call the same underlying `qrGenerateAndCache()` and share the same
+`cachefs:/qrcodes/` cache, keyed on every parameter that affects the output
+(text/binary, ecl, colors, border, pixel size, version range, mask) -- so a
+code already generated one way is an instant cache hit the other way too. See
+`components/qrCode/qrCode.cache.brs` for the full parameter list and the
+reasoning behind using `cachefs:` over `tmp:` for the cache location.
+
 ## License
 
 Copyright (c) 2022 Paramount (MIT License)

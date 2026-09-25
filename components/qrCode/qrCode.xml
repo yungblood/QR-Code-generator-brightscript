@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <component name="QRCode" extends="Poster">
     <script type="text/brightscript" uri="./qrCode.brs" />
+    <script type="text/brightscript" uri="./qrCode.cache.brs" />
     <script type="text/brightscript" uri="./qrCode.high.brs" />
     <script type="text/brightscript" uri="./qrCode.mid.brs" />
     <script type="text/brightscript" uri="./qrCode.low.brs" />
@@ -11,7 +12,12 @@
     <script type="text/brightscript" uri="./qrCode.utils.brs" />
     <interface>
         <field id="text" type="string" onChange="onTextChanged" />
-        <field id="binary" type="string" onChange="onBinaryChanged" />
+        <!-- BUGFIX: was type="string", which can't hold byte data at all (and
+             "roByteArray" isn't a valid SceneGraph field type to begin with --
+             confirmed against Roku's own <field> type reference). intarray
+             (each element 0-255) drops in directly: the encoding logic just
+             iterates the bytes regardless of container type. -->
+        <field id="binary" type="intarray" onChange="onBinaryChanged" />
         <field id="ecl" type="string" value="LOW" />
         <field id="border" type="integer" value="4" />
         <field id="pixel" type="integer" value="8" />

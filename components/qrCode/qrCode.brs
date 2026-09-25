@@ -151,51 +151,41 @@ function QrCode()
     return this
 end function
 
+' Runs synchronously on whatever thread this node lives on -- the render thread,
+' for a QRCode used directly in a scene the normal way. For anything big/frequent
+' enough that blocking the render thread is a problem, use QRCodeTask instead
+' (see qrCode.cache.brs's qrGenerateAsync()), which runs this same underlying
+' qrGenerateAndCache() logic -- and shares the same cachefs: cache -- off-thread.
 function onTextChanged(nodeEvent)
+    renderFromParams({ text: nodeEvent.getData() })
+end function
+
+' BUGFIX: the XML interface has always declared onChange="onBinaryChanged" for
+' the `binary` field, but this function never existed anywhere in the codebase --
+' setting .binary on a QRCode node would fail at runtime with no handler found.
+' Added now as part of routing both fields through the same shared render path.
+function onBinaryChanged(nodeEvent)
+    renderFromParams({ binary: nodeEvent.getData() })
+end function
+
+function renderFromParams(base as object)
     time = createObject("roTimespan")
-    text = nodeEvent.getData()
-    qr = QrCode()
-    ecl = getEcl()
-    qr.encodeText(text, ecl)
-    ba = CreateObject("roByteArray")
-    ba.FromAsciiString(text)
-    digest = CreateObject("roEVPDigest")
-    digest.Setup("sha1")
-    sha1 = digest.Process(ba)
-    renderCode(qr, "tmp:/" + sha1 + ".png")
-    ?"Time:", time.totalMilliseconds(), text
-end function
+    p = base
+    p.ecl = m.top.ecl
+    p.border = m.top.border
+    p.pixel = m.top.pixel
+    p.lightColor = m.top.lightColor
+    p.darkColor = m.top.darkColor
+    p.minVersion = m.top.minVersion
+    p.maxVersion = m.top.maxVersion
+    p.mask = m.top.mask
+    p.boost = m.top.boost
 
-function getEcl()
-    ecl = CreateObject("roSGNode", "QREcc")
-    ecl.level = "LOW"
-    if not isNullOrEmpty(m.top.ecl) then
-        ecl.level = uCase(m.top.ecl)
+    result = qrGenerateAndCache(p)
+    if result.error <> invalid then
+        ?"QRCode error:", result.error
+        return
     end if
-    return ecl
+    m.top.uri = result.uri
+    ?"Time:", time.totalMilliseconds(), "cacheHit:", result.cacheHit, p.text, p.binary
 end function
-
-sub renderCode(qr as object, filename as string)
-    border = m.top.border
-    pixel = m.top.pixel
-    lightColor = m.top.lightColor
-    darkColor = m.top.darkColor
-    size = qr.size
-    imageSide = ((border * 2) + size) * pixel
-
-    bm = CreateObject("roBitmap", { width: imageSide, height: imageSide, AlphaEnable: true })
-    if bm <> invalid then
-        bm.DrawRect(0, 0, imageSide, imageSide, lightColor)
-        for y = 0 to size - 1
-            for x = 0 to size - 1
-                if qr.modules[y][x] = 1 then
-                    bm.DrawRect((border + x) * pixel, (border + y) * pixel, pixel, pixel, darkColor)
-                end if
-            next
-        next
-        bm.Finish()
-        ba = bm.GetPng(0, 0, imageSide, imageSide)
-        ba.WriteFile(filename)
-        m.top.uri = filename
-    end if
-end sub

@@ -1,9 +1,17 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <component name="SampleScene" extends="Scene">
+  <!-- qrCode.cache.brs is needed directly here (not just inside the qrCode
+       component) because this scene calls qrGenerateAsync() itself, below,
+       to demonstrate the Task-thread path. -->
+  <script type="text/brightscript" uri="../qrCode/qrCode.cache.brs" />
   <script type="text/brightscript" uri="./sampleScene.brs" />
   <children>
     <LayoutGroup layoutDirection="vert" vertAlignment="center" horizAlignment="center" itemSpacings="[10]" translation="[640,360]">
       <LayoutGroup layoutDirection="horiz" vertAlignment="center" horizAlignment="center" itemSpacings="[10]">
+        <!-- Existing usage, unchanged: the QRCode Poster generates synchronously
+             on this scene's own (render) thread the moment `text` is set. Fine
+             for a handful of small codes like this; see the Task-thread example
+             below for anything bigger/more frequent. -->
         <qrCode text="https://www.paramountplus.com/" />
         <qrCode text="123" />
         <qrCode text="https://github.com/paramount-engineering/QR-Code-generator-brightscript" />
@@ -12,6 +20,12 @@
       </LayoutGroup>
       <Label text="QR Code Generator" />
       <Label text="Brightscript" />
+
+      <!-- Task-thread example: a plain Poster (not a <qrCode>) whose `uri` gets
+           set once the background generation finishes, so this never blocks the
+           render thread. See onTaskQrDone() in sampleScene.brs. -->
+      <Label id="taskStatusLabel" text="Generating via Task thread..." />
+      <Poster id="taskQrPoster" width="150" height="150" />
     </LayoutGroup>
   </children>
 </component>
