@@ -30,6 +30,13 @@ code already generated one way is an instant cache hit the other way too. See
 `components/qrCode/qrCode.cache.brs` for the full parameter list and the
 reasoning behind using `cachefs:` over `tmp:` for the cache location.
 
+## Author's note
+
+I'm Kevin Hoos — I was the original developer who ported this QR code generator
+library to BrightScript while working at Paramount. This fork carries forward
+that work from the original at
+[paramount-engineering/QR-Code-generator-brightscript](https://github.com/paramount-engineering/QR-Code-generator-brightscript).
+
 ## License
 
 Copyright (c) 2022 Paramount (MIT License)
