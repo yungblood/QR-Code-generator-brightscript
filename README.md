@@ -30,6 +30,30 @@ code already generated one way is an instant cache hit the other way too. See
 `components/qrCode/qrCode.cache.brs` for the full parameter list and the
 reasoning behind using `cachefs:` over `tmp:` for the cache location.
 
+## Fixes over the Paramount original
+
+The upstream repo is archived (read-only), so these are tracked here instead.
+All three were reported as issues on the original repo before it was archived
+and are fixed as of this fork:
+
+- **Large QR codes (version 7+) didn't scan** ([original report](https://github.com/paramount-engineering/QR-Code-generator-brightscript/issues/2)) —
+  two off-by-one bugs in the `splice()` array helper scrambled alignment-pattern
+  placement for any QR version needing 3+ alignment patterns. Versions 1-6 never
+  hit this path, which is why short codes always worked. Verified against
+  Project Nayuki's reference implementation across all 40 versions: 34/40
+  produced wrong output before the fix, 0/40 after.
+  Fix: [`4df9040`](https://github.com/yungblood/QR-Code-generator-brightscript/commit/4df90402a448759c36c39af895bb229e6f19760e).
+- **Changing colors had no effect until you also changed the text** ([original report](https://github.com/paramount-engineering/QR-Code-generator-brightscript/issues/4)) —
+  the old cache filename was a hash of `text` only, so re-rendering the same
+  text with different colors (or border/pixel/ecl) collided with whatever PNG
+  was already cached and silently served the stale image back. Fixed by
+  hashing every parameter that affects the rendered pixels — see
+  `qrCacheKey()` in `components/qrCode/qrCode.cache.brs`.
+  Fix: [`20b2d67`](https://github.com/yungblood/QR-Code-generator-brightscript/commit/20b2d67).
+- **No way to generate off the render thread** ([original report](https://github.com/paramount-engineering/QR-Code-generator-brightscript/issues/3)) —
+  added `QRCodeTask` / `qrGenerateAsync()`, documented above in Introduction.
+  Fix: [`20b2d67`](https://github.com/yungblood/QR-Code-generator-brightscript/commit/20b2d67).
+
 ## Author's note
 
 I'm Kevin Hoos — I was the original developer who ported this QR code generator
